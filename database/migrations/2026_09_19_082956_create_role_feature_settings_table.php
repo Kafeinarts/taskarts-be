@@ -1,0 +1,27 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('role_feature_settings', function (Blueprint $table) {
+            $table->id();
+            $table->string('role');
+            $table->string('feature_key');
+            $table->boolean('is_enabled')->default(true);
+            $table->timestamps();
+
+            $table->unique(['role', 'feature_key']);
+            $table->index('role');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('role_feature_settings');
+    }
+};

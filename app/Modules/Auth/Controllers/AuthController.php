@@ -6,6 +6,7 @@ namespace App\Modules\Auth\Controllers;
 
 use App\Http\Controllers\Api\ApiController;
 use App\Models\User;
+use App\Modules\Attendance\Services\AttendanceService;
 use App\Modules\Settings\Models\UserFeatureSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -90,7 +91,7 @@ class AuthController extends ApiController
     /**
      * Login dengan bukti kredensial, kembalikan token baru bila valid.
      */
-    public function login(Request $request): JsonResponse
+    public function login(Request $request, AttendanceService $attendance): JsonResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -103,6 +104,8 @@ class AuthController extends ApiController
 
         /** @var User $user */
         $user = Auth::user();
+
+        $attendance->logLogin($user->id, $request->ip(), $request->userAgent());
 
         return $this->ok([
             'user' => $user,
@@ -138,9 +141,11 @@ class AuthController extends ApiController
     /**
      * Cabut token aktif sehingga sesi API berakhir.
      */
-    public function logout(Request $request): JsonResponse
+    public function logout(Request $request, AttendanceService $attendance): JsonResponse
     {
-        $request->user()?->currentAccessToken()?->delete();
+        $user = $request->user();
+        $attendance->logLogout($user->id, $request->ip(), $request->userAgent());
+        $user->currentAccessToken()?->delete();
 
         return $this->ok([], 'Logout berhasil');
     }

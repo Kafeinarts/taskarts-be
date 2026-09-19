@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ApiController;
 use App\Models\User;
 use App\Modules\Settings\Models\FeatureSetting;
 use App\Modules\Settings\Services\FeatureSettingService;
+use App\Modules\Settings\Services\RoleFeatureSettingService;
 use App\Modules\Settings\Services\UserFeatureSettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -101,6 +102,48 @@ class FeatureSettingController extends ApiController
         ]);
 
         return $this->ok($service->syncForUser($user->id, $data['features']), 'Fitur user diperbarui');
+    }
+
+    // ── Role Feature Settings ──
+
+    /**
+     * Seluruh mapping role → features (admin).
+     */
+    public function roleFeatures(RoleFeatureSettingService $service): JsonResponse
+    {
+        return $this->ok($service->index(), 'Mapping role features');
+    }
+
+    /**
+     * Fitur aktif untuk role tertentu.
+     */
+    public function roleEnabled(string $role, RoleFeatureSettingService $service): JsonResponse
+    {
+        return $this->ok($service->enabledForRole($role), 'Fitur aktif role');
+    }
+
+    /**
+     * Sync mapping role → features sekaligus (admin).
+     */
+    public function syncRoleFeatures(Request $request, RoleFeatureSettingService $service): JsonResponse
+    {
+        $this->ensureAdmin($request);
+
+        $data = $request->validate([
+            'items' => ['required', 'array'],
+            'items.*.role' => ['required', 'string'],
+            'items.*.feature_key' => ['required', 'string'],
+            'items.*.is_enabled' => ['required'],
+        ]);
+
+        // Normalize is_enabled to boolean
+        $items = array_map(fn ($item) => [
+            'role' => $item['role'],
+            'feature_key' => $item['feature_key'],
+            'is_enabled' => (bool) $item['is_enabled'],
+        ], $data['items']);
+
+        return $this->ok($service->sync($items), 'Fitur role diperbarui');
     }
 
     /**
