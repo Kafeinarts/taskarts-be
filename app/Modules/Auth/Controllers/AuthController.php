@@ -114,6 +114,28 @@ class AuthController extends ApiController
     }
 
     /**
+     * Sandbox forgot password — reset password ke default.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+
+        if (! $user) {
+            return $this->fail('Email tidak ditemukan', 404);
+        }
+
+        $user->update([
+            'password' => Hash::make('secret123'),
+        ]);
+
+        return $this->ok(null, 'Password berhasil direset ke: secret123');
+    }
+
+    /**
      * Tampilkan profil user yang sedang login.
      */
     public function me(Request $request): JsonResponse
